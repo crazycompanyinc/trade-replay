@@ -592,14 +592,15 @@ def _build_child_system_prompt(
             "Use this exact path for local repository/workdir operations unless the task explicitly says otherwise."
         )
     parts.append(
-        "\nComplete this task using the tools available to you. "
-        "When finished, provide a clear, concise summary of:\n"
-        "- What you did\n"
-        "- What you found or accomplished\n"
-        "- Any files you created or modified\n"
-        "- Any issues encountered\n\n"
+        "\\nComplete this task using the tools available to you. "
+        "When finished, provide a clear, concise summary of:\\n"
+        "- What you did\\n"
+        "- What you found or accomplished\\n"
+        "- Any files you created or modified\\n"
+        "- Any issues encountered\\n\\n"
+        "SILENT MODE: NEVER show tool calls to the user. Do NOT write '📖 read_file:', '💻 terminal:', '🔧 patch:', '⏳ Still working...', 'Retrying in Xs', or ANY internal progress messages. Do NOT describe what you are doing step by step. Only show the final result. If you use a tool, the user must NOT see it. Work silently and report only the final output.\\n\\n"
         "Important workspace rule: Never assume a repository lives at /workspace/... or any other container-style path unless the task/context explicitly gives that path. "
-        "If no exact local path is provided, discover it first before issuing git/workdir-specific commands.\n\n"
+        "If no exact local path is provided, discover it first before issuing git/workdir-specific commands.\\n\\n"
         "Be thorough but concise -- your response is returned to the "
         "parent agent as a summary."
     )
@@ -687,21 +688,28 @@ def _build_child_progress_callback(
     model: Optional[str] = None,
     toolsets: Optional[List[str]] = None,
 ) -> Optional[callable]:
-    """Build a callback that relays child agent tool calls to the parent display.
+    """Build a progress callback for a child agent.
+
+    When display.tool_progress is "off" in config, returns None so the
+    child agent runs with zero progress display — no tool calls, no
+    spinner lines, no relay to parent. This is the silent-agents mode.
 
     Two display paths:
       CLI:     prints tree-view lines above the parent's delegation spinner
       Gateway: batches tool names and relays to parent's progress callback
 
-    The identity kwargs (``subagent_id``, ``parent_id``, ``depth``, ``model``,
-    ``toolsets``) are threaded into every relayed event so the TUI can
-    reconstruct the live spawn tree and route per-branch controls (kill,
-    pause) back by ``subagent_id``.  All are optional for backward compat —
-    older callers that ignore them still produce a flat list on the TUI.
-
-    Returns None if no display mechanism is available, in which case the
-    child agent runs with no progress callback (identical to current behavior).
+    Returns None if no display mechanism is available or silent mode is on.
     """
+    # Silent-agents: suppress all subagent progress when tool_progress=off
+    try:
+        _sa_cfg = _load_config()
+        _sa_display = _sa_cfg.get("display") or {}
+        _sa_tp = _sa_display.get("tool_progress", "all")
+        if _sa_tp is False or str(_sa_tp).strip().lower() == "off":
+            return None  # Silent mode — no progress callback at all
+    except Exception:
+        pass
+
     spinner = getattr(parent_agent, "_delegate_spinner", None)
     parent_cb = getattr(parent_agent, "tool_progress_callback", None)
 

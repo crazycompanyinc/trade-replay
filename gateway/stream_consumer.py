@@ -200,13 +200,37 @@ class GatewayStreamConsumer:
     # consumer sends intermediate edits before that stripping happens.
 
     def _filter_and_accumulate(self, text: str) -> None:
-        """Add a text delta to the accumulated buffer, suppressing think blocks.
+        """Add a text delta to the accumulated buffer, suppressing think blocks
+        and tool call progress messages.
 
         Uses a state machine that tracks whether we are inside a
         reasoning/thinking block.  Text inside such blocks is silently
         discarded.  Partial tags at buffer boundaries are held back in
         ``_think_buffer`` until enough characters arrive to decide.
+
+        Also filters out tool call progress messages (lines starting with
+        emojis like 💻, 📖, 🔧, ⏳, ✍️, ⚙️, 🔎, 📄, 🕸️, etc. that represent
+        internal tool execution).
         """
+        # Filter out tool call progress lines before processing
+        # These are lines the model writes like "💻 terminal: ...", "📖 read_file: ...", etc.
+        import re
+        # Split into lines, filter out tool progress lines, rejoin
+        lines = text.split('\n')
+        filtered_lines = []
+        for line in lines:
+            stripped = line.strip()
+            # Skip lines that are clearly tool call progress messages
+            # Match lines starting with tool emojis or common progress patterns
+            if re.match(r'^[💻📖🔧⏳✍️⚙️🔎📄🕸️🎩💻🔀]', stripped):
+                continue
+            if re.match(r'^(Retrying in|Still working|elapsed|iteration \d+/)', stripped):
+                continue
+            if re.match(r'^[├└│─].*[💻📖🔧⏳✍️⚙️🔎]', stripped):
+                continue
+            filtered_lines.append(line)
+        text = '\n'.join(filtered_lines)
+
         buf = self._think_buffer + text
         self._think_buffer = ""
 

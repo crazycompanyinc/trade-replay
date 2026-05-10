@@ -1,0 +1,23 @@
+[0;1;32m●[0m ssh.service - OpenBSD Secure Shell server
+     Loaded: loaded (]8;;file://srv1652065/usr/lib/systemd/system/ssh.service/usr/lib/systemd/system/ssh.service]8;;; [0;1;38;5;185mdisabled[0m; preset: [0;1;32menabled[0m)
+     Active: [0;1;32mactive (running)[0m since Thu 2026-05-07 14:39:33 UTC; 1h 33min ago
+TriggeredBy: [0;1;32m●[0m ssh.socket
+       Docs: ]8;;man:sshd(8)man:sshd(8)]8;;
+             ]8;;man:sshd_config(5)man:sshd_config(5)]8;;
+   Main PID: 1464 (sshd)
+      Tasks: 1 (limit: 9483)
+     Memory: 4.4M (peak: 7.2M)
+        CPU: 78ms
+     CGroup: /system.slice/ssh.service
+             └─[0;38;5;245m1464 "sshd: /usr/sbin/sshd -D [listener] 0 of 10-100 startups"[0m
+
+May 07 14:39:33 srv1652065 sshd[1464]: Server listening on 0.0.0.0 port 22.
+May 07 14:39:33 srv1652065 sshd[1464]: Server listening on :: port 22.
+May 07 14:39:33 srv1652065 systemd[1]: Started ssh.service - OpenBSD Secure Shell server.
+May 07 14:43:27 srv1652065 sshd[2269]: Accepted publickey for root from 169.254.0.1 port 60454 ssh2: RSA SHA256:LtXOG/zIDFE/zvEyjRdK46/SiqAj5OqsOD6OBftwYDE
+May 07 14:43:27 srv1652065 sshd[2269]: pam_unix(sshd:session): session opened for user root(uid=0) by root(uid=0)
+May 07 14:44:20 srv1652065 sshd[2494]: [0;1;39m[0;1;31m[0;1;39mpam_unix(sshd:auth): authentication failure; logname= uid=0 euid=0 tty=ssh ruser= rhost=79.116.219.246  user=root[0m
+May 07 14:44:23 srv1652065 sshd[2494]: Failed password for root from 79.116.219.246 port 53398 ssh2
+May 07 14:44:36 srv1652065 sshd[2494]: Failed password for root from 79.116.219.246 port 53398 ssh2
+May 07 14:45:24 srv1652065 sshd[2494]: Accepted password for root from 79.116.219.246 port 53398 ssh2
+May 07 14:45:24 srv1652065 sshd[2494]: pam_unix(sshd:session): session opened for user root(uid=0) by root(uid=0)
