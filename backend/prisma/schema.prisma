@@ -1,0 +1,101 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  username  String   @unique
+  password  String
+  avatar    String?
+  role      String   @default("user")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  sessions  BacktestSession[]
+  strategies Strategy[]
+}
+
+model Strategy {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  config      Json     // { indicators: [], entryRules: [], exitRules: [], riskManagement: {} }
+  isPublic    Boolean  @default(false)
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  sessions    BacktestSession[]
+}
+
+model BacktestSession {
+  id            String   @id @default(cuid())
+  name          String
+  symbol        String   // e.g. "EURUSD", "BTCUSD"
+  timeframe     String   // e.g. "1m", "5m", "1h", "1d"
+  startBalance  Float    @default(10000)
+  endBalance    Float?
+  totalPnl      Float?
+  totalPnlPct   Float?
+  totalTrades   Int      @default(0)
+  winningTrades Int      @default(0)
+  losingTrades  Int      @default(0)
+  winRate       Float?
+  maxDrawdown   Float?
+  sharpeRatio   Float?
+  status        String   @default("draft") // draft, running, completed, aborted
+  config        Json?    // session config: spread, commission, slippage, etc.
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  strategyId    String?
+  strategy      Strategy? @relation(fields: [strategyId], references: [id])
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  trades        Trade[]
+  candles       Candle[]
+}
+
+model Trade {
+  id              String   @id @default(cuid())
+  sessionId       String
+  session         BacktestSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  type            String   // "long" | "short"
+  entryPrice      Float
+  exitPrice       Float?
+  entryTime       DateTime
+  exitTime        DateTime?
+  quantity        Float    @default(1)
+  stopLoss        Float?
+  takeProfit      Float?
+  pnl             Float?
+  pnlPct          Float?
+  status          String   @default("open") // open, closed, cancelled
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([sessionId])
+}
+
+model Candle {
+  id        String   @id @default(cuid())
+  sessionId String
+  session   BacktestSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  time      Int      // unix timestamp seconds
+  open      Float
+  high      Float
+  low       Float
+  close     Float
+  volume    Float    @default(0)
+
+  @@index([sessionId, time])
+  @@unique([sessionId, time])
+}
